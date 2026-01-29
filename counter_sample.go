@@ -48,7 +48,7 @@ func (s *CounterSample) GetRecords() []Record {
 	return s.Records
 }
 
-func decodeCounterSample(r io.ReadSeeker) (Sample, error) {
+func decodeCounterSample(r io.ReadSeeker, format uint32) (Sample, error) {
 	s := &CounterSample{}
 
 	var err error
@@ -58,24 +58,43 @@ func decodeCounterSample(r io.ReadSeeker) (Sample, error) {
 		return nil, err
 	}
 
-	err = binary.Read(r, binary.BigEndian, &s.SourceIdType)
-	if err != nil {
-		return nil, err
-	}
+	switch format {
+	case TypeCounterSample:
+		err = binary.Read(r, binary.BigEndian, &s.SourceIdType)
+		if err != nil {
+			return nil, err
+		}
 
-	var srcIdIndexVal [3]byte
-	n, err := r.Read(srcIdIndexVal[:])
-	if err != nil {
-		return nil, err
-	}
+		var srcIdIndexVal [3]byte
+		n, err := r.Read(srcIdIndexVal[:])
+		if err != nil {
+			return nil, err
+		}
 
-	if n != 3 {
-		return nil, errors.New("sflow: counter sample decoding error")
-	}
+		if n != 3 {
+			return nil, errors.New("sflow: counter sample decoding error")
+		}
 
-	s.SourceIdIndexVal = uint32(srcIdIndexVal[2]) |
-		uint32(srcIdIndexVal[1])<<8 |
-		uint32(srcIdIndexVal[0])<<16
+		s.SourceIdIndexVal = uint32(srcIdIndexVal[2]) |
+			uint32(srcIdIndexVal[1])<<8 |
+			uint32(srcIdIndexVal[0])<<16
+
+	case TypeExpandedCounterSample:
+		var sourceIdType uint32
+		err = binary.Read(r, binary.BigEndian, &sourceIdType)
+		if err != nil {
+			return nil, err
+		}
+		s.SourceIdType = byte(sourceIdType)
+
+		err = binary.Read(r, binary.BigEndian, &s.SourceIdIndexVal)
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		return nil, ErrUnknownSampleType
+	}
 
 	err = binary.Read(r, binary.BigEndian, &s.numRecords)
 	if err != nil {

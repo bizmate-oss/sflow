@@ -48,7 +48,7 @@ func TestDecodeEncodeAndDecodeCounterSample(t *testing.T) {
 	buf.Read(skip[:])
 
 	// bytes.Buffer is not an io.ReadSeeker. bytes.Reader is.
-	decodedSample, err := decodeCounterSample(bytes.NewReader(buf.Bytes()))
+	decodedSample, err := decodeCounterSample(bytes.NewReader(buf.Bytes()), TypeCounterSample)
 	if err != nil {
 		t.Fatal(err)
 	}

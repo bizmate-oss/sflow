@@ -39,7 +39,10 @@ func decodeSample(r io.ReadSeeker) (Sample, error) {
 
 	switch format {
 	case TypeCounterSample:
-		return decodeCounterSample(r)
+		return decodeCounterSample(r, format)
+
+	case TypeExpandedCounterSample:
+		return decodeCounterSample(r, format)
 
 	case TypeFlowSample:
 		return decodeFlowSample(r)
